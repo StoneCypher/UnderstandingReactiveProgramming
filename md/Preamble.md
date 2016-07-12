@@ -7,5 +7,3 @@ libraries; finally, we implement one ourselves, to really drive the concept
 home.
 
 Buckle up: this is a fun ride.
-
-![](../assets/reactive-logo.png)

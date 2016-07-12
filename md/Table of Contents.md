@@ -1,6 +1,5 @@
 # Table of Contents
 
-1. TOC
 1. What is `reactive programming`?
   1. Relationships vs values
   1. Programming without time

@@ -8,8 +8,6 @@ home.
 
 Buckle up: this is a fun ride.
 
-![](../assets/reactive_logo.png)
-
 
 
 
