@@ -6,7 +6,11 @@ pseudocode, discuss why any of this matters; then we look at some popular
 libraries; finally, we implement one ourselves, to really drive the concept
 home.
 
+In the process, we'll implement a small project: #whargarbl.
+
 Buckle up: this is a fun ride.
+
+![](../assets/reactive-logo.png)
 
 
 
@@ -15,8 +19,8 @@ Buckle up: this is a fun ride.
 
 # Table of Contents
 
-1. TOC
-1. What is `reactive programming`?
+1. [What is `reactive programming`](#what-is-reactive-programming)?
+  1. TL;DR
   1. Relationships vs values
   1. Programming without time
   1. Why should you care
@@ -59,6 +63,7 @@ Buckle up: this is a fun ride.
 # What is reactive programming?
 
 1. What is `reactive programming`?
+  1. TL;DR
   1. Relationships vs values
   1. Programming without time
   1. Why should you care
