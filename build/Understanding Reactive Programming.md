@@ -10,8 +10,6 @@ In the process, we'll implement a small project: #whargarbl.
 
 Buckle up: this is a fun ride.
 
-![](../assets/reactive-logo.png)
-
 
 
 
@@ -20,7 +18,7 @@ Buckle up: this is a fun ride.
 # Table of Contents
 
 1. [What is `reactive programming`](#what-is-reactive-programming)?
-  1. TL;DR
+  1. TL;DR (Too Long; Didn't Read)
   1. Relationships vs values
   1. Programming without time
   1. Why should you care
@@ -62,11 +60,29 @@ Buckle up: this is a fun ride.
 
 # What is reactive programming?
 
-1. What is `reactive programming`?
-  1. TL;DR
-  1. Relationships vs values
-  1. Programming without time
-  1. Why should you care
+Reactive programming is about declaring relationships outside of time, not
+current values.
+
+Reactive relationships keep their results up to date.
+
+## TL;DR (Too Long; Didn't Read)
+
+In non-reactive programming, we set variables to values at any given time.
+
+```javascript
+var A = 1, B = 2, Sum = A+B;
+console.log(`Old sum: ${Sum}`);
+A = 10;
+console.log(`New sum: ${Sum}`);
+```
+
+In traditional imperative programming, `Sum` stays `3` after `A` is reassigned.
+
+In reactive programming, it's updated to the new sum, `12`, instead.
+
+## Relationships vs values
+## Programming without time
+## Why should you care
 
 
 

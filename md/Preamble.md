@@ -9,5 +9,3 @@ home.
 In the process, we'll implement a small project: #whargarbl.
 
 Buckle up: this is a fun ride.
-
-![](../assets/reactive-logo.png)

@@ -1,7 +1,7 @@
 # Table of Contents
 
 1. [What is `reactive programming`](#what-is-reactive-programming)?
-  1. TL;DR
+  1. TL;DR (Too Long; Didn't Read)
   1. Relationships vs values
   1. Programming without time
   1. Why should you care
@@ -20,11 +20,12 @@
     1. The plan (ish)
     1. Building a rig
   1. Milestones
-    1. JRV step 1 - Can read `reactive`ly
-    1. JRV step 2 - Values propagate and cache
-    1. JRV step 3 - Dirty flag for lazy recalc
-    1. JRV step 4 - Values have handlers
-    1. JRV step 5 - JRV options
+    1. JRV step 1 - Can read const `reactive`ly
+    1. JRV step 2 - Mutable JRV
+    1. JRV step 3 - Values propagate and cache
+    1. JRV step 4 - Dirty flag for lazy recalc
+    1. JRV step 5 - Values have handlers
+    1. JRV step 6 - JRV options
       1. Option 1 - should re-handle/debounce for same-assign?
       2. Option 2 - should immediate recalc w/o handler?
   1. Taking it for a spin
