@@ -116,11 +116,11 @@ Spreadsheets have come up often already; let's make a direct example.
 Spreadsheets are, essentially, reactive programming systems.  For example, in
 Excel, this would be written as
 
-| Cell | Value         | Note     |
-|:----:|:------------- |:-------- |
-| `A1` | `5`           | JS "A"   |
-| `A2` | `6`           | JS "B"   |
-| `A3` | `=SUM(A1,A2)` | JS "Sum" |
+|     | A             | B        |
+|:---:|:------------- |:-------- |
+| 1   | `5`           | JS "A"   |
+| 2   | `6`           | JS "B"   |
+| 3   | `=SUM(A1,A2)` | JS "Sum" |
 
 This should render with `11` in `A3`.  If you then change the value in `A1` to
 `15`, in response `A3` should change to `21` on its own - without prompting.
@@ -292,14 +292,151 @@ Let's get started, shall we?
 
 
 ### Building a rig
+
+`TODO COMEBACK this should be and refer to a github page`
+
+We can avoid almost the entirety of building a rig, this time around.  The
+[tutorial repo](https://github.com/StoneCypher/jrv_tutorial/) has a series of
+HTML files, for each step in the implementation.  These HTML files load the
+library, and then you can just work with the library in your browser console of
+choice (better instructions in each [HTML file](#todo_comeback))
+
+
+
 ## Milestones
+
+So, let's start walking through the aforementioned milestones, one by one.
+
+
+
 ### JRV step 1 - Can read const `reactive`ly
+
+To begin with, let's go for the genuinely horrid implementation we discussed.
+We start there because it's rock stupid simple.
+
+Smart, well written, efficient reactive systems tend to be either subscription
+or broadcast models, which propagate changes as they happen.
+
+We're not starting with a smart, well written, efficient system.  We're starting
+with modest tools.
+
+Because this is `Built On Works` &trade; technology, we're taking the slow-mode
+route and doing the entire computation exhaustively on every request (which is
+easier to implement, but extremely wasteful.)
+
+It's a start.  We'll do better quickly.
+
+
+
+#### What do we need?
+
+A garbage implementation can be made on a single class, with a constructor and
+a custom getter.
+
+#### Let's do it
+
+```javascript
+class JRV { // js reactive variable
+
+    constructor(comp) { this.comp = comp; }
+    get v()           { return this.comp() }
+
+}
+```
+
+This is "barely counts" reactive.  Fundamentally, this is the rudimentary sole
+piece of `reactive`: having a computation that's always up to date on request.
+(It's just that this is awful slow, and can't be updated, and doesn't have any
+of the API we'd want from a nice implementation.)
+
+All this really does is take a function in the constructor, then offer a getter
+which runs the function when gotten.  The getter, `.v`, is the "value" of the
+`JRV`, and with time will have more complex behavior.
+
+But, for now, this is pretty much just a lame wrapper of a provided function.
+
+
+
+#### Results
+
+> As a quick reminder, a function that adds `A` and `B` and returns the result
+> can be expressed briefly in JavaScript as an arrow by writing
+>
+> ```javascript
+> () => A+B
+> ```
+
+This isn't exactly elegant, but it gets the job done, per our earlier example:
+
+```javascript
+var A   = 5,
+    B   = 6,
+    Sum = new RN( () => A+B );
+
+console.log( Sum.v );  // 11
+
+A = 15;
+
+console.log( Sum.v );  // 21
+```
+
+This is technically `reactive`, though it is not yet "there" in spirit.  But,
+one step at a time, especially during the learning process.  We'll get there
+in this document.
+
+![](http://i0.kym-cdn.com/photos/images/original/000/909/991/48c.jpg)
+
+The first thing we should fix is making the value computation updatable.
+
+
+
 ### JRV step 2 - Mutable JRV
+
+It's important to be able to change the value of a JRV.  Currently, we cannot.
+I
+
+
+#### What do we need?
+#### Let's do it
+#### Results
+
+
+
 ### JRV step 3 - Values propagate and cache
+#### What do we need?
+#### Let's do it
+#### Results
+
+
+
 ### JRV step 4 - Dirty flag for lazy recalc
+#### What do we need?
+#### Let's do it
+#### Results
+
+
+
 ### JRV step 5 - Values have handlers
+#### What do we need?
+#### Let's do it
+#### Results
+
+
+
 ### JRV step 6 - pure call handler
+#### What do we need?
+#### Let's do it
+#### Results
+
+
+
 ### JRV step 7 - JRV options
+#### What do we need?
+#### Let's do it
+#### Results
+
+
+
 #### Option 1 - should re-handle/debounce for same-assign?
 #### Option 2 - should immediate recalc w/o handler?
 ## Taking it for a spin
