@@ -766,11 +766,12 @@ Consider again the same case of a system where `F` depends on `E`, which depends
 on `D`, and so on back to `A`.
 
 This time, suppose that `E`, `F`, and `G` are generally unused except initially.
-We're mostly interested in `D`.
+We're mostly interested in `D`.  (We've attached a handler to `D` so the handler
+always needs to be current, we'll say.)
 
-If we change `A`, then we care that `D` gets re-cached, but we keep eagerly
-updating `E`, `F`, and `G`, which (if we aren't using them) is another, probably
-lesser form of waste.
+If we change `A`, then we care that `D` gets re-cached. Unfortunately, we also
+keep eagerly updating `E`, `F`, and `G`, which (if we aren't using them) is
+another (probably lesser) form of waste.
 
 Let's kill that waste too, by implementing lazy updates.
 
@@ -781,14 +782,177 @@ Let's kill that waste too, by implementing lazy updates.
 
 So, now we just want to update the stuff that actually needs to be updated.
 
+
+
 #### What do we need?
+
+We need to know which things *actually need* to be updated, and we need to
+update those immediately.  For the rest, we just want to mark that the cache
+is out of date, then move on.
+
+In our current system, something "needs" to be kept up to date if it has a
+handler on it.  Otherwise, it can calc back to the last known cache, on call,
+updating everything in its wake.
+
+We would also like to skip this entirly if there's no reason to believe the
+current cache is out of date.  That's hard if the system is no longer eagerly
+forward-pushing values, though.
+
+The way we'll accomplish this is to change what the `notifier` does.  In the
+older versions of `JRV`, when a variable was notified of a change, it would
+immediately call `.update`, summoning the new value.
+
+In new `JRV`, the `notifier` will instead call a function that flags the `JRV`
+as needing an update (which we call "flagging it `dirty`,") and let the `JRV`
+proceed.
+
+
+
 #### Let's do it
+
+Initially, a `JRV` should be `dirty`, reflecting that it needs update (we have
+been updating from start all along, so this is just the natural new modelling.)
+As such we add to the constructor
+
+```javascript
+this.dirty = true;
+```
+
+Next, we'll need a mechanism to flag a `JRV` as `dirty`.
+
+What this mechanism will do is to set a local flag member called `.dirty` to
+`true`, then to call `.update` immediately if the `JRV` has a `change handler`
+(because those need immediate update,) then finally to dirty all downstream
+dependencies.
+
+```javascript
+flag_dirty() {
+    this.dirty = true;
+    if (this.change_handler) { this.update(); }
+    this.callbacks.map(cb => cb());
+    return this;
+}
+```
+
+Now that we have `JRV`s that are born `dirty` and can be made `dirty`, we also
+need a way to un`dirty` them.  This will happen in our newer, beefier `.update`:
+
+```javascript
+update() {
+
+    var compIsFunc = (typeof this.comp  === 'function'),
+        valIsObj   = (typeof this.value === 'object'),
+        oldVal     = valIsObj? NaN : this.value;
+
+    this.dirty = false;
+
+    this.value = (compIsFunc? this.comp() : this.comp);
+
+    if (this.value !== oldVal) {
+        this.change_handler(this.value, oldVal);
+    }
+
+    return this.value;
+
+}
+```
+
+We've added a line `this.dirty = false` to suggest that after that line in an
+`.update`, the `JRV` is no longer dirty.  However, if you're paying attention,
+you'll notice we've also replaced the old-value comparison with something weird
+and gross that involves the Not-a-Number `NaN`.  (Guh?)
+
+We're exploiting some grossness in Javascript to get around an unmentioned bug
+in version four.
+
+See, in version four, where we assign the current `this.value` to `oldVal`,
+if `this.value` was an object, what we'd do would be to make both those names
+point at the same object, rather than to get a clone of that object (because
+Javascript is gross.)
+
+Now, we could write a deep clone algorithm (because Javascript doesn't have one,
+because Javascript is gross,) and also a deep compare algorithm (because... ,)
+and *also* take the time to make some difficult choices about what happens when
+there's certain complex cases inside, like websockets, or badly written objects
+that don't make copy construction possible.
+
+Oooooor.  We could just say "if it's an object, fail the match and issue a
+change."  Which is what we'll do here, because, bleh, let's just get on with it.
+
+We could rewrite the path to say "if it's an object, recalc and change;
+otherwise cache, recalc, compare, and maybe change."  But that's complicated
+and brittle.
+
+Instead we'll exploit a very gross choice in Javascript: `NaN === NaN` is
+`false`, not `true` like common sense dictates.
+
+That means that if we use `NaN` as our placeholder, then nothing the comparator
+can return will strict-compare true, and therefore we can keep the old algorithm
+by dint of Javascript dark magic.
+
+So now that we have a complete dirty flagging system, we can change the
+`notifier factory` to return the `dirty flag`ger, instead of the `update`r.
+
+```javascript
+make_notifier() {
+    return (() => this.flag_dirty());
+}
+```
+
+And we're done.
+
+
+
 #### Results
+
+We now have a `JRV` implementation that caches results, automatically pushes
+values exactly as far as they need to go, and keeps dirty flagging all the way
+out the tree.
+
+Using the browser debugger, we can witness the dirty flagging and caching
+in action:
+
+```javascript
+var log        = data => console.log(`Active leaf received: ${data}`),
+
+    Root        = new JRV(0),
+    Middle      = new JRV( () => Root.v   * 2 ).needs(Root),
+    ActiveLeaf  = new JRV( () => Middle.v * 3 ).needs(Middle).onchange(log),
+    PassiveLeaf = new JRV( () => Middle.v * 3 ).needs(Middle);
+
+Root.v = 1;
+```
+
+`ActiveLeaf` will log as expected.  On looking in the browser's debugger, one
+will see that `PassiveLeaf` is flagged `dirty`, and has an out of date
+`cache value` on record.  Hurrah!
+
+![](http://i.imgur.com/3WvSgSy.png)
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+```
 
 There's a [playground here](#todo_comeback_whargarbl) if you'd like to
 experiment before continuing.
 
 #### Problem
+
+One problem we'll ignore for the moment: the `.onchange` handler is being called
+on `ActiveLeaf` *twice*, which is either a subtle bug, or something the user
+should be expected to handle, depending on how you look at it.  We'll look at
+that later.
+
+For now, the API could use some work.  You can construct a value in place, you
+can assign a value in place, but you can't fluent-call a value in place, which
+prevents you from doing everything in fluent, if you want to.  Same observation
+holds for the change handler.  Let's go full fluent (while also supporting our
+entire current interface.)
 
 
 
@@ -796,6 +960,12 @@ experiment before continuing.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+```
 
 There's a [playground here](#todo_comeback_whargarbl) if you'd like to
 experiment before continuing.
@@ -808,6 +978,12 @@ experiment before continuing.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+```
 
 There's a [playground here](#todo_comeback_whargarbl) if you'd like to
 experiment before continuing.
