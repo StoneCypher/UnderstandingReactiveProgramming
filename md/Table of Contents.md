@@ -8,9 +8,11 @@
   1. What is `functional reactive programming` ?
   1. What we'll do
 1. Popular JS `reactive` libraries
-  1. Bacon.js
-  1. Kefir.js
-  1. Reactivex
+  1. Well established libraries
+    1. Bacon.js
+    1. Kefir.js
+    1. Reactivex
+  1. Summary
 1. Building a modest one ourselves
   1. Getting Started
     1. The plan (ish)
