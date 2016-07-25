@@ -2,14 +2,11 @@
 
 1. [What is `reactive programming`](#what-is-reactive-programming)?
   1. TL;DR (Too Long; Didn't Read)
-  1. Relationships vs values; time
-  1. What we'll do
-1. Initial steps in understanding
-  1. Pseudo-JS example
   1. Spreadsheet example
+  1. Relationships vs values; time
   1. Paradigms; why this is Fundamentally Different (tm)
   1. What is `functional reactive programming` ?
-  1. "What's next" - pop, then dig in
+  1. What we'll do
 1. Popular JS `reactive` libraries
   1. Bacon.js
   1. Kefir.js

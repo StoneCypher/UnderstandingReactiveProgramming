@@ -33,6 +33,12 @@ from their workload.
 
 
 
+## Spreadsheet example
+
+TODO COMEBACK
+
+
+
 ## Relationships vs values; time
 
 Reactive programming is a fair shift in mindset.  One useful early way to look
@@ -54,6 +60,14 @@ less work in management, and removes a bunch of opportunities for error.
 
 
 
+## Paradigms; why this is Fundamentally Different (tm)
+todo comeback
+
+
+
+## What is `functional reactive programming` ?
+todo comeback
+
 
 
 ## What we'll do
@@ -62,3 +76,6 @@ This tutorial will give a quick overview of Reactive solutions already out there
 for Javascript, then dive into a direct, simple implementation of Reactive
 programming in JS.  It's much easier to understand Reactive after one has gotten
 one's hands dirty in building a system directly.
+
+After that, we'll move ahead to make a project with our Reactive system, to see
+how it feels in practice.
