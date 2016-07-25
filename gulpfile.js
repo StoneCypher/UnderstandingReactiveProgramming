@@ -61,7 +61,7 @@ gulp.task('default', ['assemble', 'html']);
 
 gulp.task('deploy', ['default'], function(done_cb) {
 
-    execSync('git subtree push --prefix dist origin gh-pages');
+    execSync('git add . -A && git commit -m "deploy push" && git push origin && git subtree push --prefix dist origin gh-pages');
     done_cb();
 
 });
