@@ -50,11 +50,11 @@ Spreadsheets have come up often already; let's make a direct example.
 Spreadsheets are, essentially, reactive programming systems.  For example, in
 Excel, this would be written as
 
-| Cell | Value         | Note     |
-|:----:|:------------- |:-------- |
-| `A1` | `5`           | JS "A"   |
-| `A2` | `6`           | JS "B"   |
-| `A3` | `=SUM(A1,A2)` | JS "Sum" |
+|     | A             | B        |
+|:---:|:------------- |:-------- |
+| 1   | `5`           | JS "A"   |
+| 2   | `6`           | JS "B"   |
+| 3   | `=SUM(A1,A2)` | JS "Sum" |
 
 This should render with `11` in `A3`.  If you then change the value in `A1` to
 `15`, in response `A3` should change to `21` on its own - without prompting.

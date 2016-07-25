@@ -26,7 +26,7 @@
     1. JRV step 6 - pure call handler
     1. JRV step 7 - JRV options
       1. Option 1 - should re-handle/debounce for same-assign?
-      2. Option 2 - should immediate recalc w/o handler?
+      1. Option 2 - should immediate recalc w/o handler?
   1. Taking it for a spin
     1. Implementing a Side Project Revenue calculator
 1. Worldview issues

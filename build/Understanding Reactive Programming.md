@@ -22,18 +22,17 @@ Buckle up: this is a fun ride.
 
 1. [What is `reactive programming`](#what-is-reactive-programming)?
   1. TL;DR (Too Long; Didn't Read)
-  1. Relationships vs values; time
-  1. What we'll do
-1. Initial steps in understanding
-  1. Pseudo-JS example
+    1. No, seriously, what is `reactive`?
   1. Spreadsheet example
-  1. Paradigms; why this is Fundamentally Different (tm)
+  1. Relationships vs values; time
   1. What is `functional reactive programming` ?
-  1. "What's next" - pop, then dig in
+  1. What we'll do
 1. Popular JS `reactive` libraries
-  1. Bacon.js
-  1. Kefir.js
-  1. Reactivex
+  1. Well established libraries
+    1. Bacon.js
+    1. Kefir.js
+    1. Reactivex
+  1. Summary
 1. Building a modest one ourselves
   1. Getting Started
     1. The plan (ish)
@@ -47,14 +46,14 @@ Buckle up: this is a fun ride.
     1. JRV step 6 - pure call handler
     1. JRV step 7 - JRV options
       1. Option 1 - should re-handle/debounce for same-assign?
-      2. Option 2 - should immediate recalc w/o handler?
+      1. Option 2 - should immediate recalc w/o handler?
   1. Taking it for a spin
     1. Implementing a Side Project Revenue calculator
 1. Worldview issues
   1. Benefits
   2. Detriments
   3. Alternatives
-  4. Paradigms, revisited
+  4. Paradigms
 1. Conclusion
 
 
@@ -76,6 +75,14 @@ Reactive relationships keep their results up to date.
 
 ## TL;DR (Too Long; Didn't Read)
 
+*Generally speaking, `reactive` means "things are kept up to date."*
+
+It's what you're used to from Excel.
+
+
+
+### No, seriously, what is `reactive`?
+
 In standard imperative and other non-reactive programming, we set variables to
 values at any given time.
 
@@ -87,16 +94,41 @@ A = 10;
 console.log(`New sum: ${Sum}`);
 ```
 
-In traditional imperative programming, `Sum` stays `3` after `A` is reassigned.
+1. That first `console.log` should say that `X` is `11`.
+1. The second `console.log` should still say that `X` is `11`, because the
+   addition was done at a specific time, before the change happened.
+1. *In languages with a `reactive` notation*, like in spreadsheets, `X` would
+   change to `21` in the second `console.log`.
 
-In reactive programming, the values of variables are kept up to date; `Sum` is
-updated to the new sum, `12`, instead.
+That is, in `reactive` languages, *what `X` expresses is addition of `A` and `B`
+as a continuing relationship*, not the immediate result value.
 
 Many of the features of programming languages aim to remove burden from
 programmers, such as manual memory management, loop control, or socket handling.
 
 Reactive programming aims to allow programmers to remove updating related values
 from their workload.
+
+
+## Spreadsheet example
+
+Spreadsheets have come up often already; let's make a direct example.
+Spreadsheets are, essentially, reactive programming systems.  For example, in
+Excel, this would be written as
+
+| Cell | Value         | Note     |
+|:----:|:------------- |:-------- |
+| `A1` | `5`           | JS "A"   |
+| `A2` | `6`           | JS "B"   |
+| `A3` | `=SUM(A1,A2)` | JS "Sum" |
+
+This should render with `11` in `A3`.  If you then change the value in `A1` to
+`15`, in response `A3` should change to `21` on its own - without prompting.
+
+This is simple `reactive` programming.
+
+Our goal in this tutorial is to understand programming in this fashion, and then
+to implement a practical such system in Javascript.
 
 
 
@@ -121,6 +153,17 @@ less work in management, and removes a bunch of opportunities for error.
 
 
 
+## What is `functional reactive programming` ?
+
+We're not going to cover FRP here, but, the short version is, if you're going
+to the extent that a `Haskell`, `OCAML`, or `LISP` person would, and nailing
+your RP system down with math, then you're probably doing one of the forms of
+FRP.  Arrows-based FRP is an example, if you want to go Googling, but for now,
+let's just keep it friendly and simple.
+
+Mostly this topic is here to clarify that no, we are not going to that level of
+strictness in our system.
+
 
 
 ## What we'll do
@@ -130,23 +173,8 @@ for Javascript, then dive into a direct, simple implementation of Reactive
 programming in JS.  It's much easier to understand Reactive after one has gotten
 one's hands dirty in building a system directly.
 
-
-
-
-<br/><br/><br/><br/>
-
-
-
-
-# Initial steps in understanding
-
-1. Initial steps in understanding
-  1. Pseudo-JS example
-  1. Spreadsheet example
-  1. Paradigms; why this is Fundamentally Different (tm)
-  1. What is `functional reactive programming` ?
-  1. "What's next" - pop, then dig in
-
+After that, we'll move ahead to make a project with our Reactive system, to see
+how it feels in practice.
 
 
 
@@ -158,11 +186,54 @@ one's hands dirty in building a system directly.
 
 # Popular JS `reactive` libraries
 
-1. Popular JS `reactive` libraries
-  1. Bacon.js
-  1. Kefir.js
-  1. Reactivex
+To be clear, if you're going to use this stuff in production, you're much better
+off with a well established `reactive` library with a long history, battle
+scars, and an active community.  We're just building one from scratch because
+that's how one learns these best.
 
+
+
+## Well established libraries
+
+Generally I would advocate one of three libraries in the JS world.
+
+
+
+### Bacon.js
+
+Bacon arguably popularised RP in the Javascript world.  Bacon has a very
+strictly defined order of events, meaning that even strange edge cases are
+handled in a very well defined (although frequently hard to suss out) fashion.
+If you're a bank, use Bacon.
+
+
+
+### Kefir.js
+
+Kefir is less uptight.  Bacon pays a price in speed for its strictness; Kefir
+is what you'll want to use for less agonizingly strict work.  It also has a
+rather nicer API, in my opinion.
+
+
+
+### Reactivex
+
+Reactivex' biggest advantage is that it's been implemented in more than a dozen
+languages.  You can rely of Reactivex to be present not only in today's backend,
+but if it's not hipster nonsense, most likely in tomorrow's as well.  If you're
+trying to use reactive in complex service situations, this is oftentimes an
+absolute necessity, and Reactivex then becomes the only game in town.
+
+
+
+## Summary
+
+As you can see from even this brief glimpse, there are tradeoffs to be had in
+your choice of implementation.  There are a dozen other serious candidates at
+the time of writing; take the time to do some investigation before you choose.
+
+Either way, it's time to get on to the meat of the project: implementing our
+own.
 
 
 
@@ -174,20 +245,65 @@ one's hands dirty in building a system directly.
 
 # Building a modest one ourselves
 
-1. Building a modest one ourselves
-  1. Getting Started
-    1. The plan (ish)
-    1. Building a rig
-  1. Milestones
-    1. JRV step 1 - Can read `reactive`ly
-    1. JRV step 2 - Values propagate and cache
-    1. JRV step 3 - Dirty flag for lazy recalc
-    1. JRV step 4 - Values have handlers
-    1. JRV step 5 - JRV options
-      1. Option 1 - should re-handle/debounce for same-assign?
-      2. Option 2 - should immediate recalc w/o handler?
-  1. Taking it for a spin
-    1. Todo
+A person often won't understand a thing until they've hacked one together.
+Let's do a low-quality `reactive` system.  We won't put much effort in; as a
+result it will be slow, vulnerable to injection attack, and very easy to kill
+with cycles.
+
+On the bright side, it'll be easy, and then `reactive` should be clearer.
+
+Let's toss something together.
+
+
+
+## Getting Started
+
+To begin with, let's put three other Github repos on your radar:
+
+1. Each major step in the tutorial process has a step in the
+   [JRV Tutorial](https://github.com/StoneCypher/jrv_tutorial/) repo.
+1. The current final up to date version is
+   [distributed on NPM as `jrv`](https://www.npmjs.com/package/jrv), from a
+   [Github repo named `jrv`](https://github.com/StoneCypher/jrv).
+
+With that out of the way, it's time to take steps through the process.  😆
+
+
+
+### The plan (ish)
+
+We're going to start by implementing this in *just an* ***awful*** way,
+initially.  Then, piece by piece, we'll refine it into something quite usable.
+
+1. Initially, the system will calculate the entire chain every time it's asked,
+   with relationships unchangeable after created.
+1. In the second step, we'll make relationships changeable.
+1. Next, we'll teach the values to update themselves when things change, and
+   to cache the values we receive, for better performance.
+1. Afterwards, we'll trim the propogations back to only what's actually needed
+   ("lazy updates,") and set up the dirty flag system that makes that possible.
+1. Next, we'll create "handlers" - routines that are called as values change.
+   After this step, the library will become genuinely useful.
+1. Following that, we'll support "chain" or "fluent" notation, like one expects
+   from `d3` and `jquery`, which will lead to a much more pleasant API.
+
+Let's get started, shall we?
+
+
+
+### Building a rig
+## Milestones
+### JRV step 1 - Can read const `reactive`ly
+### JRV step 2 - Mutable JRV
+### JRV step 3 - Values propagate and cache
+### JRV step 4 - Dirty flag for lazy recalc
+### JRV step 5 - Values have handlers
+### JRV step 6 - pure call handler
+### JRV step 7 - JRV options
+#### Option 1 - should re-handle/debounce for same-assign?
+#### Option 2 - should immediate recalc w/o handler?
+## Taking it for a spin
+### Implementing a Side Project Revenue calculator
 
 
 
@@ -204,7 +320,34 @@ one's hands dirty in building a system directly.
   1. Benefits
   2. Detriments
   3. Alternatives
-  4. Paradigms, revisited
+  4. Paradigms
+
+
+
+
+## Paradigms
+
+We occasionally discuss "paradigms" of programming.
+
+![](https://i.imgflip.com/16yfmw.jpg)
+
+A paradigm is, in broad strokes, a way of looking at authoring software.
+
+Object oriented, functional, logical, constraint based (like SQL and CSS,) and
+dozens of others are paradigms of programming.  Many languages, like C++ and
+Javascript, support multiple programming paradigms.
+
+When one discusses paradigms, one discusses entirely different worldviews of
+how software is made.  By example, imperative software (BCPL / C family) tends
+to be small algorithms as functions, built up into successively larger
+functions, generally largely heirarchally.  Contrasting, object oriented
+software tends to be built in mostly-discrete pieces, separated by interfaces.
+Constraint based software tends to be "under these circumstances, fulfill these
+requirements, or list for me the possibilities."
+
+Paradigms are inherently sort of a blurry concept, and people often get into
+arguments about whether this one or that one "really counts."
+
 
 
 

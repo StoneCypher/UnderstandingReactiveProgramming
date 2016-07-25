@@ -2,7 +2,6 @@
   "./md/Preamble.md",
   "./md/Table of Contents.md",
   "./md/What is Reactive Programming.md",
-  "./md/Initial steps in understanding.md",
   "./md/Popular JS reactive libraries.md",
   "./md/Building a modest one ourselves.md",
   "./md/Worldview issues.md",
