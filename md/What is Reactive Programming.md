@@ -28,14 +28,14 @@ A = 10;
 console.log(`New sum: ${Sum}`);
 ```
 
-1. That first `console.log` should say that `X` is `11`.
-1. The second `console.log` should still say that `X` is `11`, because the
+1. That first `console.log` should say that `Sum` is `11`.
+1. The second `console.log` should still say that `Sum` is `11`, because the
    addition was done at a specific time, before the change happened.
-1. *In languages with a `reactive` notation*, like in spreadsheets, `X` would
+1. *In languages with a `reactive` notation*, like in spreadsheets, `Sum` would
    change to `21` in the second `console.log`.
 
-That is, in `reactive` languages, *what `X` expresses is addition of `A` and `B`
-as a continuing relationship*, not the immediate result value.
+That is, in `reactive` languages, *what `Sum` expresses is addition of `A` and
+`B` as a continuing relationship*, not the immediate result value.
 
 Many of the features of programming languages aim to remove burden from
 programmers, such as manual memory management, loop control, or socket handling.
@@ -90,7 +90,7 @@ less work in management, and removes a bunch of opportunities for error.
 ## What is `functional reactive programming` ?
 
 We're not going to cover FRP here, but, the short version is, if you're going
-to the extent that a `Haskell`, `OCAML`, or `LISP` person would, and nailing
+to the extent that a `Haskell`, `OCaml`, or `LISP` person would, and nailing
 your RP system down with math, then you're probably doing one of the forms of
 FRP.  Arrows-based FRP is an example, if you want to go Googling, but for now,
 let's just keep it friendly and simple.

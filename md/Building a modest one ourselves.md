@@ -136,6 +136,26 @@ A = 15;
 console.log( Sum.v );  // 21
 ```
 
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+class JRV { // js reactive variable
+
+    constructor(comp) { this.comp = comp; }
+    get v()           { return this.comp() }
+
+}
+```
+
+
+
 #### Problem
 
 This is technically `reactive`, though it is not yet "there" in spirit.  But,
@@ -144,7 +164,15 @@ in this document.
 
 ![](http://i0.kym-cdn.com/photos/images/original/000/909/991/48c.jpg)
 
+Note that this doesn't do the thing that most people expect from `reactive`
+systems, yet - it doesn't actually "react" to changes.  It just has updates in
+place at all times.  But the "react" part is the part people want, and where the
+name comes from.
+
+It's coming up.
+
 The first thing we should fix is making the value computation updatable.
+
 
 
 ### JRV step 2 - Mutable JRV
@@ -243,6 +271,30 @@ console.log( X.v );
 
 And that's rather nicer.
 
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+class JRV {
+
+    constructor(comp) { this.comp = comp; }
+    set v(newComp)    { this.comp = newComp; }
+
+    get v() {
+        var isFunc = (typeof this.comp === 'function');
+        return isFunc? this.comp() : this.comp;
+    }
+
+}
+```
+
+
 #### Problem
 
 At this point, we have an adequate notation.  However, this approach is very
@@ -259,10 +311,255 @@ Let's fix that, with propagation and caching.
 
 
 ### JRV step 3 - Values propagate and cache
+
+So for efficiency's sake, let's have the values cache.  To do that, we'll also
+need the values to update themselves (because if they cached without updating)
+themselves, they'd just be out of date all the time, and then what's the point?
+
+
+
 #### What do we need?
+
+Getting values to cache means storing the last value we've seen from them, and
+reporting that from the getter, instead of executing directly.
+
+This also means that `JRV`s need to know what depends on them, so that they can
+notify the dependencies of a change.
+
+To do that, we'll build a `notifier factory` to make `notifier`s for the
+dependant, and we'll make a method on the dependency called `.should_notify`
+that tells it to call the `notifier` that we pass to it.
+
+One significant consequence of this approach is that ***`JRV`s must now rely on
+other `JRV`s***, because normal variables don't know to call notifiers when
+they're set.
+
+(You could alter the `__prototype__` of the primitive types to change that, but
+that'd be awful, and would trigger all kinds of security and practical problems,
+so, don't.)
+
+
+
 #### Let's do it
+
+We start by adding a method `.update`, which can update an internally stored
+value to its new state.
+
+```javascript
+update() {
+    var isFunc        = (typeof this.comp === 'function');
+    return this.value = (isFunc? this.comp() : this.comp);
+}
+```
+
+This is roughly the same as the previous `getter`: check if the stored
+computation is a `function`; assign to `value` either the function, called,
+or the non-function; return what was assigned.  In this way, `.value` becomes
+our value cache.
+
+Following that, the `getter` is reduced to the much simpler returning of the
+cached value:
+
+```javascript
+get v() {
+    return this.value;
+}
+```
+
+Next, we need to make the `notifier factory`.  This turns out to be quite
+straightforward: it's just a `function` that returns another `function` that
+we make on the spot, which just calls `.update` on this `JRV`.  We will call
+what we return `notifier`s, which is not a technical term, but helps clarify
+what's being done.
+
+```javascript
+make_notifier() {
+    return (() => this.update());
+}
+```
+
+To use this, the dependency will need to be made aware of the notifier.  We can
+set that up with `.should_notify`, a method we can pass the notifier to.
+
+```javascript
+    should_notify(cb) {
+        this.callbacks = this.callbacks.concat(cb);
+    }
+```
+
+Looks like we're just going to push it onto the back of an array called
+`this.callbacks`.  Of course, `this.callbacks` doesn't exist yet, so, let's
+make sure to init that in the `JRV`'s constructor, to an empty array:
+
+```javascript
+    constructor(comp) {
+        this.comp      = comp;
+        this.callbacks = [];
+        this.update();
+    }
+```
+
+As you can see, we also added an `.update()` at the end of the constructor, to
+make sure that the `JRV` was entirely up to date once set up.
+
+Finally, we should modify the `setter` to make an `.update` call and then notify
+the dependencies manually:
+
+```javascript
+    set v(newComp) {
+        this.comp = newComp;
+        this.update();
+        this.callbacks.map(cb => cb());
+    }
+```
+
+
+
 #### Results
+
+Now we have `JRV`s which actively update themselves, and cache their values,
+eliminating one large source of inefficiency: wasted recalculation.
+
+```javascript
+var A   = new JRV(0),
+    B   = new JRV(5),
+    Sum = new JRV( () => A.v + B.v );
+
+A.should_notify(Sum.make_notifier());
+B.should_notify(Sum.make_notifier());
+
+console.log( Sum.v );
+
+A.v = 10; console.log( Sum.v );
+A.v = 20; console.log( Sum.v );
+A.v = 30; console.log( Sum.v );
+
+Sum.v = () => (A.v*2) + (B.v*2);
+console.log( Sum.v );
+```
+
+That's kinda gross, though, that `.should_notify` bit.  Any large extensive use
+of this library, that'd get out of control, fast, especially for computations
+with a bunch of dependencies.
+
+Most problematically, it puts the conceptual burden of the dependency on the
+sources, instead of on the conclusion.  This means that one has to go manually
+handle every single dependency one at a time, instead of just giving a list of
+what's upstream of the thing you're thinking about at the time.  Not only is
+that cumbersome and error-prone, but you also need to do it inline, breaking the
+conceptual flow of your computation with a bunch of manual chaff.
+
+We can make a method `.needs` to fix the problem.
+
+All `.needs` will do is accept an array of the `JRV`s that are upstream, and
+walk their `.should_notify` methods with our caller's `notifier`.  (For
+convenience it'll also accept a non-array single upstream parent.)
+
+```javascript
+needs(Dep) {
+    if (Array.isArray(Dep)) { Dep.map(d => d.should_notify(this.make_notifier())); }
+    else                    { Dep.should_notify(this.make_notifier()); }
+    return this;
+}
+```
+
+As a result, instead of writing
+
+```javascript
+var Sum = new JRV( () => A.v + B.v );
+
+A.should_notify(Sum.make_notifier());
+B.should_notify(Sum.make_notifier());
+```
+
+We may now write
+
+```javascript
+var Sum = new JRV( () => A.v + B.v ).needs([A,B]);
+```
+
+Which leads to a much more pleasant and readable authoring experience:
+
+```javascript
+var A = new JRV(0),
+    B = new JRV(5),
+    X = new JRV( () => A.v + B.v ).needs([A,B]);
+
+console.log( X.v );
+
+A.v = 10; console.log( X.v );
+A.v = 20; console.log( X.v );
+A.v = 30; console.log( X.v );
+
+X.v = () => (A.v*2) + (B.v*2);
+console.log( X.v );
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+class JRV { // reactive node
+
+    constructor(comp) {
+        this.comp      = comp;
+        this.callbacks = [];
+        this.update();
+    }
+
+    should_notify(cb) {
+        this.callbacks = this.callbacks.concat(cb);
+    }
+
+    needs(Dep) {
+        if (Array.isArray(Dep)) { Dep.map(d => d.should_notify(this.make_notifier())); }
+        else                    { Dep.should_notify(this.make_notifier()); }
+        return this;
+    }
+
+    make_notifier() {
+        return (() => this.update());
+    }
+
+    set v(newComp) {
+        this.comp = newComp;
+        this.update();
+        this.callbacks.map(cb => cb());
+    }
+
+    get v() {
+        return this.value;
+    }
+
+    update() {
+        var isFunc        = (typeof this.comp === 'function');
+        return this.value = (isFunc? this.comp() : this.comp);
+    }
+
+}
+```
+
+
+
 #### Problem
+
+Consider again the same case of a system where `F` depends on `E`, which depends
+on `D`, and so on back to `A`.
+
+This time, suppose that `E`, `F`, and `G` are generally unused except initially.
+We're mostly interested in `D`.
+
+If we change `A`, then we care that `D` gets re-cached, but we keep eagerly
+updating `E`, `F`, and `G`, which (if we aren't using them) is another, probably
+lesser form of waste.
+
+Let's kill that waste too, by implementing lazy updates.
 
 
 
@@ -270,6 +567,10 @@ Let's fix that, with propagation and caching.
 #### What do we need?
 #### Let's do it
 #### Results
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
 #### Problem
 
 
@@ -278,6 +579,10 @@ Let's fix that, with propagation and caching.
 #### What do we need?
 #### Let's do it
 #### Results
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
 #### Problem
 
 
@@ -286,6 +591,10 @@ Let's fix that, with propagation and caching.
 #### What do we need?
 #### Let's do it
 #### Results
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
 #### Problem
 
 
@@ -294,6 +603,10 @@ Let's fix that, with propagation and caching.
 #### What do we need?
 #### Let's do it
 #### Results
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
 #### Problem
 
 
