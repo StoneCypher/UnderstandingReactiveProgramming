@@ -1,6 +1,6 @@
 # Table of Contents
 
-1. [What is `reactive programming`](#what-is-reactive-programming)?
+1. [What is `reactive programming`](#what-is-reactive-programming-)?
   1. TL;DR (Too Long; Didn't Read)
     1. No, seriously, what is `reactive`?
   1. Spreadsheet example

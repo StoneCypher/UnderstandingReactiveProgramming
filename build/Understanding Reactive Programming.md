@@ -20,7 +20,7 @@ Buckle up: this is a fun ride.
 
 # Table of Contents
 
-1. [What is `reactive programming`](#what-is-reactive-programming)?
+1. [What is `reactive programming`](#what-is-reactive-programming-)?
   1. TL;DR (Too Long; Didn't Read)
     1. No, seriously, what is `reactive`?
   1. Spreadsheet example
@@ -396,7 +396,7 @@ class JRV { // js reactive variable
 }
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+There's a [playground here](https://stonecypher.github.io/jrv_tutorial/1_readable/index.html) if you'd like to
 experiment before continuing.
 
 
@@ -564,7 +564,7 @@ class JRV {
 }
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+There's a [playground here](https://stonecypher.github.io/jrv_tutorial/2_mutable_jrv/index.html) if you'd like to
 experiment before continuing.
 
 
@@ -814,7 +814,7 @@ class JRV { // reactive node
 }
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+There's a [playground here](https://stonecypher.github.io/jrv_tutorial/3_update_and_cache/index.html) if you'd like to
 experiment before continuing.
 
 
@@ -1002,7 +1002,7 @@ class JRV { // reactive node
 }
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+There's a [playground here](https://stonecypher.github.io/jrv_tutorial/4_values_have_handlers/index.html) if you'd like to
 experiment before continuing.
 
 #### Problem
@@ -1183,7 +1183,7 @@ The full implementation now looks like
 ```javascript
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+There's a [playground here](https://stonecypher.github.io/jrv_tutorial/5_dirty_and_lazy/index.html) if you'd like to
 experiment before continuing.
 
 #### Problem
