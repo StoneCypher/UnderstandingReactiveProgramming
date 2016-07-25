@@ -1,0 +1,1299 @@
+<!DOCTYPE html><html><title>Understanding Reactive Programming</title><xmp theme="united" style="display:none;"># Introduction to Reactive Programming
+
+This is a fast, non-technical introduction to functional reactive programming in
+Javascript.  We start with a quick overview of the idea, look at some
+pseudocode, discuss why any of this matters; then we look at some popular
+libraries; finally, we implement one ourselves, to really drive the concept
+home.
+
+In the process, we'll implement a small project: #whargarbl.
+
+Buckle up: this is a fun ride.
+
+
+
+
+<br/><br/><br/><br/>
+
+
+
+
+# Table of Contents
+
+1. [What is `reactive programming`](#what-is-reactive-programming)?
+  1. TL;DR (Too Long; Didn't Read)
+    1. No, seriously, what is `reactive`?
+  1. Spreadsheet example
+  1. Relationships vs values; time
+  1. What is `functional reactive programming` ?
+  1. What we'll do
+1. Popular JS `reactive` libraries
+  1. Well established libraries
+    1. Bacon.js
+    1. Kefir.js
+    1. Reactivex
+  1. Summary
+1. Building a modest one ourselves
+  1. Getting Started
+    1. The plan (ish)
+    1. Building a rig
+  1. Milestones
+    1. Step 1 - Can read const `reactive`ly
+    1. Step 2 - Mutable JRV
+    1. Step 3 - Values propagate and cache
+    1. Step 4 - Values have handlers
+    1. Step 5 - Dirty flag for lazy recalc
+    1. Step 6 - pure call handler
+    1. Step 7 - JRV options
+      1. Option 1 - should re-handle/debounce for same-assign?
+      1. Option 2 - should immediate recalc w/o handler?
+  1. Taking it for a spin
+    1. Implementing a Side Project Revenue calculator
+1. Worldview issues
+  1. Benefits
+  2. Detriments
+  3. Alternatives
+  4. Paradigms
+1. Conclusion
+
+
+
+
+<br/><br/><br/><br/>
+
+
+
+
+# What is reactive programming?
+
+Reactive programming is about declaring relationships outside of time, not
+current values.
+
+Reactive relationships keep their results up to date.
+
+
+
+## TL;DR (Too Long; Didn't Read)
+
+*Generally speaking, `reactive` means "things are kept up to date."*
+
+It's what you're used to from Excel.
+
+
+
+### No, seriously, what is `reactive`?
+
+In standard imperative and other non-reactive programming, we set variables to
+values at any given time.
+
+```javascript
+const A = 1, B = 2, Sum = A+B;
+console.log(`Old sum: ${Sum}`);
+
+A = 10;
+console.log(`New sum: ${Sum}`);
+```
+
+1. That first `console.log` should say that `Sum` is `11`.
+1. The second `console.log` should still say that `Sum` is `11`, because the
+   addition was done at a specific time, before the change happened.
+1. *In languages with a `reactive` notation*, like in spreadsheets, `Sum` would
+   change to `21` in the second `console.log`.
+
+That is, in `reactive` languages, *what `Sum` expresses is addition of `A` and
+`B` as a continuing relationship*, not the immediate result value.
+
+Many of the features of programming languages aim to remove burden from
+programmers, such as manual memory management, loop control, or socket handling.
+
+Reactive programming aims to allow programmers to remove updating related values
+from their workload.
+
+
+## Spreadsheet example
+
+Spreadsheets have come up often already; let's make a direct example.
+Spreadsheets are, essentially, reactive programming systems.  For example, in
+Excel, this would be written as
+
+|     | A             | B        |
+|:---:|:------------- |:-------- |
+| 1   | `5`           | JS "A"   |
+| 2   | `6`           | JS "B"   |
+| 3   | `=SUM(A1,A2)` | JS "Sum" |
+
+This should render with `11` in `A3`.  If you then change the value in `A1` to
+`15`, in response `A3` should change to `21` on its own - without prompting.
+
+This is simple `reactive` programming.
+
+Our goal in this tutorial is to understand programming in this fashion, and then
+to implement a practical such system in Javascript.
+
+
+
+## Relationships vs values; time
+
+Reactive programming is a fair shift in mindset.  One useful early way to look
+at it as "binding relationships, instead of values."
+
+Think about CSS for a moment.  Many of its values are ratios (percentages in
+columns and tables, particularly.)  Computed values are explicitly functions
+that get kept up to date.  Transitions and animations are relationships
+described by labels that are kept up to date through a time process for you.
+
+Reactive programming is, in one sense, programming independent of time.  If I
+can say that a value bears this relationship to these other values, and then
+trust that the relationships are maintained, then I don't need to worry whether
+a given value is up to date, or implement keeping it so.
+
+A large proportion of many programs has to do with updating, maintaining, and
+propogating values throughout the app.  Having this supported underneath means
+less work in management, and removes a bunch of opportunities for error.
+
+
+
+## What is `functional reactive programming` ?
+
+We're not going to cover FRP here, but, the short version is, if you're going
+to the extent that a `Haskell`, `OCaml`, or `LISP` person would, and nailing
+your RP system down with math, then you're probably doing one of the forms of
+FRP.  Arrows-based FRP is an example, if you want to go Googling, but for now,
+let's just keep it friendly and simple.
+
+Mostly this topic is here to clarify that no, we are not going to that level of
+strictness in our system.
+
+
+
+## What we'll do
+
+This tutorial will give a quick overview of Reactive solutions already out there
+for Javascript, then dive into a direct, simple implementation of Reactive
+programming in JS.  It's much easier to understand Reactive after one has gotten
+one's hands dirty in building a system directly.
+
+After that, we'll move ahead to make a project with our Reactive system, to see
+how it feels in practice.
+
+
+
+
+<br/><br/><br/><br/>
+
+
+
+
+# Popular JS `reactive` libraries
+
+To be clear, if you're going to use this stuff in production, you're much better
+off with a well established `reactive` library with a long history, battle
+scars, and an active community.  We're just building one from scratch because
+that's how one learns these best.
+
+
+
+## Well established libraries
+
+Generally I would advocate one of three libraries in the JS world.
+
+
+
+### Bacon.js
+
+Bacon arguably popularised RP in the Javascript world.  Bacon has a very
+strictly defined order of events, meaning that even strange edge cases are
+handled in a very well defined (although frequently hard to suss out) fashion.
+If you're a bank, use Bacon.
+
+
+
+### Kefir.js
+
+Kefir is less uptight.  Bacon pays a price in speed for its strictness; Kefir
+is what you'll want to use for less agonizingly strict work.  It also has a
+rather nicer API, in my opinion.
+
+
+
+### Reactivex
+
+Reactivex' biggest advantage is that it's been implemented in more than a dozen
+languages.  You can rely of Reactivex to be present not only in today's backend,
+but if it's not hipster nonsense, most likely in tomorrow's as well.  If you're
+trying to use reactive in complex service situations, this is oftentimes an
+absolute necessity, and Reactivex then becomes the only game in town.
+
+
+
+## Summary
+
+As you can see from even this brief glimpse, there are tradeoffs to be had in
+your choice of implementation.  There are a dozen other serious candidates at
+the time of writing; take the time to do some investigation before you choose.
+
+Either way, it's time to get on to the meat of the project: implementing our
+own.
+
+
+
+
+<br/><br/><br/><br/>
+
+
+
+
+# Building a modest one ourselves
+
+A person often won't understand a thing until they've hacked one together.
+Let's do a low-quality `reactive` system.  We won't put much effort in; as a
+result it will be slow, vulnerable to injection attack, and very easy to kill
+with cycles.
+
+On the bright side, it'll be easy, and then `reactive` should be clearer.
+
+Let's toss something together.
+
+
+
+## Getting Started
+
+To begin with, let's put three other Github repos on your radar:
+
+1. Each major step in the tutorial process has a step in the
+   [JRV Tutorial](https://github.com/StoneCypher/jrv_tutorial/) repo.
+1. The current final up to date version is
+   [distributed on NPM as `jrv`](https://www.npmjs.com/package/jrv), from a
+   [Github repo named `jrv`](https://github.com/StoneCypher/jrv).
+
+With that out of the way, it's time to take steps through the process.  😆
+
+
+
+### The plan (ish)
+
+We're going to start by implementing this in *just an* ***awful*** way,
+initially.  Then, piece by piece, we'll refine it into something quite usable.
+
+1. Initially, the system will calculate the entire chain every time it's asked,
+   with relationships unchangeable after created.
+1. In the second step, we'll make relationships changeable.
+1. Next, we'll teach the values to update themselves when things change, and
+   to cache the values we receive, for better performance.
+1. Afterwards, we'll trim the propogations back to only what's actually needed
+   ("lazy updates,") and set up the dirty flag system that makes that possible.
+1. Next, we'll create "handlers" - routines that are called as values change.
+   After this step, the library will become genuinely useful.
+1. Following that, we'll support "chain" or "fluent" notation, like one expects
+   from `d3` and `jquery`, which will lead to a much more pleasant API.
+
+Let's get started, shall we?
+
+
+
+### Building a rig
+
+`TODO COMEBACK this should be and refer to a github page`
+
+We can avoid almost the entirety of building a rig, this time around.  The
+[tutorial repo](https://github.com/StoneCypher/jrv_tutorial/) has a series of
+HTML files, for each step in the implementation.  These HTML files load the
+library, and then you can just work with the library in your browser console of
+choice (better instructions in each [HTML file](#todo_comeback))
+
+
+
+## Milestones
+
+So, let's start walking through the aforementioned milestones, one by one.
+
+
+
+### Step 1 - Can read const `reactive`ly
+
+To begin with, let's go for the genuinely horrid implementation we discussed.
+We start there because it's rock stupid simple.
+
+Smart, well written, efficient reactive systems tend to be either subscription
+or broadcast models, which propagate changes as they happen.
+
+We're not starting with a smart, well written, efficient system.  We're starting
+with modest tools.
+
+Because this is `Built On Works` &trade; technology, we're taking the slow-mode
+route and doing the entire computation exhaustively on every request (which is
+easier to implement, but extremely wasteful.)
+
+It's a start.  We'll do better quickly.
+
+
+
+#### What do we need?
+
+A garbage implementation can be made on a single class, with a constructor and
+a custom `getter`.
+
+#### Let's do it
+
+```javascript
+class JRV { // js reactive variable
+
+    constructor(comp) { this.comp = comp; }
+    get v()           { return this.comp() }
+
+}
+```
+
+This is "barely counts" reactive.  Fundamentally, this is the rudimentary sole
+piece of `reactive`: having a computation that's always up to date on request.
+(It's just that this is awful slow, and can't be updated, and doesn't have any
+of the API we'd want from a nice implementation.)
+
+All this really does is take a function in the constructor, then offer a
+`getter` which runs the function when gotten.  The `getter`, `.v`, represents
+the "value" of the `JRV`, and with time will have more complex behavior.
+
+But, for now, this is pretty much just a lame wrapper of a provided function.
+
+
+
+#### Results
+
+> As a quick reminder, a function that adds `A` and `B` and returns the result
+> can be expressed briefly in JavaScript as an arrow by writing
+>
+> ```javascript
+> () => A+B
+> ```
+
+
+This isn't exactly elegant, but it gets the job done, per our earlier example:
+
+```javascript
+var A   = 5,
+    B   = 6,
+    Sum = new RN( () => A+B );
+
+console.log( Sum.v );  // 11
+
+A = 15;
+
+console.log( Sum.v );  // 21
+```
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+class JRV { // js reactive variable
+
+    constructor(comp) { this.comp = comp; }
+    get v()           { return this.comp() }
+
+}
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+
+
+#### Problem
+
+This is technically `reactive`, though it is not yet "there" in spirit.  But,
+one step at a time, especially during the learning process.  We'll get there
+in this document.
+
+![](http://i0.kym-cdn.com/photos/images/original/000/909/991/48c.jpg)
+
+Note that this doesn't do the thing that most people expect from `reactive`
+systems, yet - it doesn't actually "react" to changes.  It just has updates in
+place at all times.  But the "react" part is the part people want, and where the
+name comes from.
+
+It's coming up.
+
+The first thing we should fix is making the value computation updatable.
+
+
+
+### Step 2 - Mutable JRV
+
+It's important to be able to change the value of a JRV.  Currently, we cannot.
+
+#### What do we need?
+
+To do this, we'll need to add a `setter` to complement the `getter` for `.v`.
+
+#### Let's do it
+
+```javascript
+class JRV {
+
+    constructor(comp) { this.comp = comp; }
+    set v(newComp)    { this.comp = newComp; }
+
+    get v() { return this.comp(); }
+
+}
+```
+
+
+
+#### Results
+
+Not a huge or shocking change here, since we're early on.  We use the same
+example, but now we change some underlying computations and show that the change
+took, as well.
+
+We're going to implement all the variables as `JRV`s this time, so that we have
+something to change, and something derived from them to call.
+
+```javascript
+var A = new JRV( () => 0 ),
+    B = new JRV( () => 5 ),
+    X = new JRV( () => A.v + B.v );
+
+console.log( X.v );
+
+A.v = () => 10; console.log( X.v );
+A.v = () => 20; console.log( X.v );
+A.v = () => 30; console.log( X.v );
+
+X.v = () => (A.v*2) + (B.v*2);
+console.log( X.v );
+```
+
+And, that works.  But, honestly, it'd be nice if we didn't have to write arrows
+to return simple values, like in A and B there; we should be able to just have
+constants there.  We can't, currently, because the `getter` assumes that the
+thing in `.comp` storage is a function, and can be called.  So, if you pass an
+integer to the `constructor`, the `JRV` will try to call the integer - say,
+
+```javascript
+5();
+```
+
+... which is nonsense.  The shell will see it this way:
+
+```javascript
+> var X = new RN( () => 42 );
+undefined
+
+> X.v;
+42
+
+> X.v = 10;
+10
+
+> X.v;
+VM198:5 Uncaught TypeError: this.comp is not a function(…)
+get v @ VM198:5(anonymous function) @ VM278:1
+
+> X.v = () => 10;
+() => 10
+
+> X.v;
+10
+```
+
+So, let's make the thing more convenient to use.
+
+There are a bunch of possible responses to this: make two setters, one for
+values; test the type on the way in and wrap it with a reader if it's not a
+function; check if the thing is a value on emit, and emit safely if not.  There
+are ups and downs to each.
+
+The easiest way is to check, in the getter, whether the thing in `.comp` is a
+function; if so to call it; if not, to return it directly.
+
+So, we'll change
+
+```javascript
+    get v() { return this.comp(); }
+```
+
+To
+
+```javascript
+    get v() {
+        var isFunc = (typeof this.comp === 'function');
+        return isFunc? this.comp() : this.comp;
+    }
+```
+
+As a result, we can now write
+
+```javascript
+var A = new JRV(0),
+    B = new JRV(5),
+    X = new JRV( () => A.v + B.v );
+
+console.log( X.v );
+
+A.v = 10; console.log( X.v );
+A.v = 20; console.log( X.v );
+A.v = 30; console.log( X.v );
+
+X.v = () => (A.v*2) + (B.v*2);
+console.log( X.v );
+```
+
+And that's rather nicer.
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+class JRV {
+
+    constructor(comp) { this.comp = comp; }
+    set v(newComp)    { this.comp = newComp; }
+
+    get v() {
+        var isFunc = (typeof this.comp === 'function');
+        return isFunc? this.comp() : this.comp;
+    }
+
+}
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+
+
+#### Problem
+
+At this point, we have an adequate notation.  However, this approach is very
+slow.
+
+Consider the case of a system where `F` depends on `E`, which depends on `D`,
+and so on back to `A`.
+
+In our current system, if we make a change to `D` then inspect `F`, every
+computation back to `A` will be repeated, wastefully.
+
+Let's fix that, with propagation and caching.
+
+
+
+### Step 3 - Values propagate and cache
+
+So for efficiency's sake, let's have the values cache.  To do that, we'll also
+need the values to update themselves (because if they cached without updating)
+themselves, they'd just be out of date all the time, and then what's the point?
+
+
+
+#### What do we need?
+
+Getting values to cache means storing the last value we've seen from them, and
+reporting that from the getter, instead of executing directly.
+
+This also means that `JRV`s need to know what depends on them, so that they can
+notify the dependencies of a change.
+
+To do that, we'll build a `notifier factory` to make `notifier`s for the
+dependant, and we'll make a method on the dependency called `.should_notify`
+that tells it to call the `notifier` that we pass to it.
+
+One significant consequence of this approach is that ***`JRV`s must now rely on
+other `JRV`s***, because normal variables don't know to call notifiers when
+they're set.
+
+(You could alter the `__prototype__` of the primitive types to change that, but
+that'd be awful, and would trigger all kinds of security and practical problems,
+so, don't.)
+
+
+
+#### Let's do it
+
+We start by adding a method `.update`, which can update an internally stored
+value to its new state.
+
+```javascript
+update() {
+    var isFunc        = (typeof this.comp === 'function');
+    return this.value = (isFunc? this.comp() : this.comp);
+}
+```
+
+This is roughly the same as the previous `getter`: check if the stored
+computation is a `function`; assign to `value` either the function, called,
+or the non-function; return what was assigned.  In this way, `.value` becomes
+our value cache.
+
+Following that, the `getter` is reduced to the much simpler returning of the
+cached value:
+
+```javascript
+get v() {
+    return this.value;
+}
+```
+
+Next, we need to make the `notifier factory`.  This turns out to be quite
+straightforward: it's just a `function` that returns another `function` that
+we make on the spot, which just calls `.update` on this `JRV`.  We will call
+what we return `notifier`s, which is not a technical term, but helps clarify
+what's being done.
+
+```javascript
+make_notifier() {
+    return (() => this.update());
+}
+```
+
+To use this, the dependency will need to be made aware of the notifier.  We can
+set that up with `.should_notify`, a method we can pass the notifier to.
+
+```javascript
+    should_notify(cb) {
+        this.callbacks = this.callbacks.concat(cb);
+    }
+```
+
+Looks like we're just going to push it onto the back of an array called
+`this.callbacks`.  Of course, `this.callbacks` doesn't exist yet, so, let's
+make sure to init that in the `JRV`'s constructor, to an empty array:
+
+```javascript
+    constructor(comp) {
+        this.comp      = comp;
+        this.callbacks = [];
+        this.update();
+    }
+```
+
+As you can see, we also added an `.update()` at the end of the constructor, to
+make sure that the `JRV` was entirely up to date once set up.
+
+Finally, we should modify the `setter` to make an `.update` call and then notify
+the dependencies manually:
+
+```javascript
+    set v(newComp) {
+        this.comp = newComp;
+        this.update();
+        this.callbacks.map(cb => cb());
+    }
+```
+
+
+
+#### Results
+
+Now we have `JRV`s which actively update themselves, and cache their values,
+eliminating one large source of inefficiency: wasted recalculation.
+
+```javascript
+var A   = new JRV(0),
+    B   = new JRV(5),
+    Sum = new JRV( () => A.v + B.v );
+
+A.should_notify(Sum.make_notifier());
+B.should_notify(Sum.make_notifier());
+
+console.log( Sum.v );
+
+A.v = 10; console.log( Sum.v );
+A.v = 20; console.log( Sum.v );
+A.v = 30; console.log( Sum.v );
+
+Sum.v = () => (A.v*2) + (B.v*2);
+console.log( Sum.v );
+```
+
+That's kinda gross, though, that `.should_notify` bit.  Any large extensive use
+of this library, that'd get out of control, fast, especially for computations
+with a bunch of dependencies.
+
+Most problematically, it puts the conceptual burden of the dependency on the
+sources, instead of on the conclusion.  This means that one has to go manually
+handle every single dependency one at a time, instead of just giving a list of
+what's upstream of the thing you're thinking about at the time.  Not only is
+that cumbersome and error-prone, but you also need to do it inline, breaking the
+conceptual flow of your computation with a bunch of manual chaff.
+
+We can make a method `.needs` to fix the problem.
+
+All `.needs` will do is accept an array of the `JRV`s that are upstream, and
+walk their `.should_notify` methods with our caller's `notifier`.  (For
+convenience it'll also accept a non-array single upstream parent.)
+
+```javascript
+needs(Dep) {
+    if (Array.isArray(Dep)) { Dep.map(d => d.should_notify(this.make_notifier())); }
+    else                    { Dep.should_notify(this.make_notifier()); }
+    return this;
+}
+```
+
+As a result, instead of writing
+
+```javascript
+var Sum = new JRV( () => A.v + B.v );
+
+A.should_notify(Sum.make_notifier());
+B.should_notify(Sum.make_notifier());
+```
+
+We may now write
+
+```javascript
+var Sum = new JRV( () => A.v + B.v ).needs([A,B]);
+```
+
+Which leads to a much more pleasant and readable authoring experience:
+
+```javascript
+var A = new JRV(0),
+    B = new JRV(5),
+    X = new JRV( () => A.v + B.v ).needs([A,B]);
+
+console.log( X.v );
+
+A.v = 10; console.log( X.v );
+A.v = 20; console.log( X.v );
+A.v = 30; console.log( X.v );
+
+X.v = () => (A.v*2) + (B.v*2);
+console.log( X.v );
+```
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+class JRV { // reactive node
+
+    constructor(comp) {
+        this.comp      = comp;
+        this.callbacks = [];
+        this.update();
+    }
+
+    should_notify(cb) {
+        this.callbacks = this.callbacks.concat(cb);
+    }
+
+    needs(Dep) {
+        if (Array.isArray(Dep)) { Dep.map(d => d.should_notify(this.make_notifier())); }
+        else                    { Dep.should_notify(this.make_notifier()); }
+        return this;
+    }
+
+    make_notifier() {
+        return (() => this.update());
+    }
+
+    set v(newComp) {
+        this.comp = newComp;
+        this.update();
+        this.callbacks.map(cb => cb());
+    }
+
+    get v() {
+        return this.value;
+    }
+
+    update() {
+        var isFunc        = (typeof this.comp === 'function');
+        return this.value = (isFunc? this.comp() : this.comp);
+    }
+
+}
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+
+
+#### Problem
+
+The nice part of `reactive` programming is having your variables just trigger
+their own behaviors after they're changed.  We don't have that yet, but, let's
+see what happens when we do.
+
+In particular, all that `console.log`ging in the example is pretty grimy, no?
+
+Fix it time.
+
+
+
+### Step 4 - Values have handlers
+
+We'd like for variables to have associated behaviors by which to "react" to
+changes, thereby earning the conceptual (if not the definitive) part of the
+name.
+
+Those behaviors will be functions, which we'll call `change handler`s.
+
+
+
+#### What do we need?
+
+We just need to associate a `change handler`, and call it at the right times.
+
+
+
+#### Let's do it
+
+First, let's add a method that lets us change the `change handler` on an
+existing `JRV`.
+
+```javascript
+onchange(newOnChange) {
+    this.change_handler = newOnChange;
+    return this;
+}
+```
+
+Next, let's initialize that member in the `constructor`, and take it from a
+`constructor` argument we'll add.  We'll also give it a default of a function
+that does nothing but return `true`, so that we don't have to go find out if
+there's something to call.
+
+```javascript
+    constructor(comp = (() => true), onchange = (() => true)) {
+        this.comp           = comp;
+        this.change_handler = onchange;
+        this.callbacks      = [];
+        this.update();
+    }
+```
+
+Finally, we improve `.update` to the following algorithm:
+
+1. Locally store the old cache
+1. Update the cache
+1. If the updated cache is different than the local store,
+  1. Call the `change handler`.
+
+Aaaaand, that can be implemented like this:
+
+```javascript
+update() {
+
+    var isFunc   = (typeof this.comp === 'function'),
+        oldValue = this.value;
+
+    this.value = (isFunc? this.comp() : this.comp);
+
+    if (this.value !== oldValue) {
+        this.change_handler(this.value, oldValue);
+    }
+
+    return this.value;
+
+}
+```
+
+
+
+#### Results
+
+We can now just associate the `console.log` as the behavior of `Sum` when it
+changes.  This creates a *far* cleaner example:
+
+```javascript
+var logger = NewData => console.log(`Changed: ${NewData}`),
+
+    A      = new JRV(0),
+    B      = new JRV(5),
+
+    Sum    = new JRV( () => A.v + B.v )
+                   .needs([A,B])
+                   .onchange(logger);
+
+console.log( `Initial value: ${Sum.v}` );
+
+A.v = 10;
+A.v = 20;
+A.v = 30;
+
+Sum.v = () => (A.v*2) + (B.v*2);
+```
+
+Now, you will see an initial value, and a bunch of "Changed:" notices, without
+their being called for.  The output in a Chrome console should read
+
+<pre>
+Initial value: 5         VM102:10
+Changed: 15              VM102:1
+Changed: 25              VM102:1
+Changed: 35              VM102:1
+Changed: 70              VM102:1
+</pre>
+
+The ***real*** value of `reactive` programming is beginning to deliver.
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+
+class JRV { // reactive node
+
+    constructor(comp = (() => true), onchange = (() => true)) {
+        this.comp           = comp;
+        this.change_handler = onchange;
+        this.callbacks      = [];
+        this.update();
+    }
+
+    should_notify(cb) {
+        this.callbacks = this.callbacks.concat(cb);
+    }
+
+    needs(Dep) {
+        if (Array.isArray(Dep)) { Dep.map(d => d.should_notify(this.make_notifier())); }
+        else                    { Dep.should_notify(this.make_notifier()); }
+        return this;
+    }
+
+    make_notifier() {
+        return (() => this.update());
+    }
+
+    onchange(newOnChange) {
+        this.change_handler = newOnChange;
+        return this;
+    }
+
+    set v(newComp) {
+        this.comp = newComp;
+        this.update();
+        this.callbacks.map(cb => cb());
+    }
+
+    get v() {
+        return this.value;
+    }
+
+    update() {
+
+        var isFunc   = (typeof this.comp === 'function'),
+            oldValue = this.value;
+
+        this.value = (isFunc? this.comp() : this.comp);
+
+        if (this.value !== oldValue) {
+            this.change_handler(this.value, oldValue);
+        }
+
+        return this.value;
+
+    }
+
+}
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+#### Problem
+
+Consider again the same case of a system where `F` depends on `E`, which depends
+on `D`, and so on back to `A`.
+
+This time, suppose that `E`, `F`, and `G` are generally unused except initially.
+We're mostly interested in `D`.  (We've attached a handler to `D` so the handler
+always needs to be current, we'll say.)
+
+If we change `A`, then we care that `D` gets re-cached. Unfortunately, we also
+keep eagerly updating `E`, `F`, and `G`, which (if we aren't using them) is
+another (probably lesser) form of waste.
+
+Let's kill that waste too, by implementing lazy updates.
+
+
+
+
+### Step 5 - Dirty flag for lazy recalc
+
+So, now we just want to update the stuff that actually needs to be updated.
+
+
+
+#### What do we need?
+
+We need to know which things *actually need* to be updated, and we need to
+update those immediately.  For the rest, we just want to mark that the cache
+is out of date, then move on.
+
+In our current system, something "needs" to be kept up to date if it has a
+handler on it.  Otherwise, it can calc back to the last known cache, on call,
+updating everything in its wake.
+
+We would also like to skip this entirly if there's no reason to believe the
+current cache is out of date.  That's hard if the system is no longer eagerly
+forward-pushing values, though.
+
+The way we'll accomplish this is to change what the `notifier` does.  In the
+older versions of `JRV`, when a variable was notified of a change, it would
+immediately call `.update`, summoning the new value.
+
+In new `JRV`, the `notifier` will instead call a function that flags the `JRV`
+as needing an update (which we call "flagging it `dirty`,") and let the `JRV`
+proceed.
+
+
+
+#### Let's do it
+
+Initially, a `JRV` should be `dirty`, reflecting that it needs update (we have
+been updating from start all along, so this is just the natural new modelling.)
+As such we add to the constructor
+
+```javascript
+this.dirty = true;
+```
+
+Next, we'll need a mechanism to flag a `JRV` as `dirty`.
+
+What this mechanism will do is to set a local flag member called `.dirty` to
+`true`, then to call `.update` immediately if the `JRV` has a `change handler`
+(because those need immediate update,) then finally to dirty all downstream
+dependencies.
+
+```javascript
+flag_dirty() {
+    this.dirty = true;
+    if (this.change_handler) { this.update(); }
+    this.callbacks.map(cb => cb());
+    return this;
+}
+```
+
+Now that we have `JRV`s that are born `dirty` and can be made `dirty`, we also
+need a way to un`dirty` them.  This will happen in our newer, beefier `.update`:
+
+```javascript
+update() {
+
+    var compIsFunc = (typeof this.comp  === 'function'),
+        valIsObj   = (typeof this.value === 'object'),
+        oldVal     = valIsObj? NaN : this.value;
+
+    this.dirty = false;
+
+    this.value = (compIsFunc? this.comp() : this.comp);
+
+    if (this.value !== oldVal) {
+        this.change_handler(this.value, oldVal);
+    }
+
+    return this.value;
+
+}
+```
+
+We've added a line `this.dirty = false` to suggest that after that line in an
+`.update`, the `JRV` is no longer dirty.  However, if you're paying attention,
+you'll notice we've also replaced the old-value comparison with something weird
+and gross that involves the Not-a-Number `NaN`.  (Guh?)
+
+We're exploiting some grossness in Javascript to get around an unmentioned bug
+in version four.
+
+See, in version four, where we assign the current `this.value` to `oldVal`,
+if `this.value` was an object, what we'd do would be to make both those names
+point at the same object, rather than to get a clone of that object (because
+Javascript is gross.)
+
+Now, we could write a deep clone algorithm (because Javascript doesn't have one,
+because Javascript is gross,) and also a deep compare algorithm (because... ,)
+and *also* take the time to make some difficult choices about what happens when
+there's certain complex cases inside, like websockets, or badly written objects
+that don't make copy construction possible.
+
+Oooooor.  We could just say "if it's an object, fail the match and issue a
+change."  Which is what we'll do here, because, bleh, let's just get on with it.
+
+We could rewrite the path to say "if it's an object, recalc and change;
+otherwise cache, recalc, compare, and maybe change."  But that's complicated
+and brittle.
+
+Instead we'll exploit a very gross choice in Javascript: `NaN === NaN` is
+`false`, not `true` like common sense dictates.
+
+That means that if we use `NaN` as our placeholder, then nothing the comparator
+can return will strict-compare true, and therefore we can keep the old algorithm
+by dint of Javascript dark magic.
+
+So now that we have a complete dirty flagging system, we can change the
+`notifier factory` to return the `dirty flag`ger, instead of the `update`r.
+
+```javascript
+make_notifier() {
+    return (() => this.flag_dirty());
+}
+```
+
+And we're done.
+
+
+
+#### Results
+
+We now have a `JRV` implementation that caches results, automatically pushes
+values exactly as far as they need to go, and keeps dirty flagging all the way
+out the tree.
+
+Using the browser debugger, we can witness the dirty flagging and caching
+in action:
+
+```javascript
+var log        = data => console.log(`Active leaf received: ${data}`),
+
+    Root        = new JRV(0),
+    Middle      = new JRV( () => Root.v   * 2 ).needs(Root),
+    ActiveLeaf  = new JRV( () => Middle.v * 3 ).needs(Middle).onchange(log),
+    PassiveLeaf = new JRV( () => Middle.v * 3 ).needs(Middle);
+
+Root.v = 1;
+```
+
+`ActiveLeaf` will log as expected.  On looking in the browser's debugger, one
+will see that `PassiveLeaf` is flagged `dirty`, and has an out of date
+`cache value` on record.  Hurrah!
+
+![](http://i.imgur.com/3WvSgSy.png)
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+#### Problem
+
+One problem we'll ignore for the moment: the `.onchange` handler is being called
+on `ActiveLeaf` *twice*, which is either a subtle bug, or something the user
+should be expected to handle, depending on how you look at it.  We'll look at
+that later.
+
+For now, the API could use some work.  You can construct a value in place, you
+can assign a value in place, but you can't fluent-call a value in place, which
+prevents you from doing everything in fluent, if you want to.  Same observation
+holds for the change handler.  Let's go full fluent (while also supporting our
+entire current interface.)
+
+
+
+### Step 6 - pure call handler
+#### What do we need?
+#### Let's do it
+#### Results
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+#### Problem
+
+
+
+### Step 7 - JRV options
+#### What do we need?
+#### Let's do it
+#### Results
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
+#### Problem
+
+
+
+#### Option 1 - should re-handle/debounce for same-assign?
+#### Option 2 - should immediate recalc w/o handler?
+## Taking it for a spin
+### Implementing a Side Project Revenue calculator
+
+
+
+
+
+<br/><br/><br/><br/>
+
+
+
+
+# Worldview issues
+
+1. Worldview issues
+  1. Benefits
+  2. Detriments
+  3. Alternatives
+  4. Paradigms
+
+
+
+
+## Paradigms
+
+We occasionally discuss "paradigms" of programming.
+
+![](https://i.imgflip.com/16yfmw.jpg)
+
+A paradigm is, in broad strokes, a way of looking at authoring software.
+
+Object oriented, functional, logical, constraint based (like SQL and CSS,) and
+dozens of others are paradigms of programming.  Many languages, like C++ and
+Javascript, support multiple programming paradigms.
+
+When one discusses paradigms, one discusses entirely different worldviews of
+how software is made.  By example, imperative software (BCPL / C family) tends
+to be small algorithms as functions, built up into successively larger
+functions, generally largely heirarchally.  Contrasting, object oriented
+software tends to be built in mostly-discrete pieces, separated by interfaces.
+Constraint based software tends to be "under these circumstances, fulfill these
+requirements, or list for me the possibilities."
+
+Paradigms are inherently sort of a blurry concept, and people often get into
+arguments about whether this one or that one "really counts."
+
+
+
+
+
+<br/><br/><br/><br/>
+
+
+
+
+# Conclusion
+
+1. Conclusion</xmp><script src="http://strapdownjs.com/v/0.2/strapdown.js"></script></html>
