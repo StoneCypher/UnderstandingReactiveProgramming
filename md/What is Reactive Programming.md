@@ -9,6 +9,14 @@ Reactive relationships keep their results up to date.
 
 ## TL;DR (Too Long; Didn't Read)
 
+*Generally speaking, `reactive` means "things are kept up to date."*
+
+It's what you're used to from Excel.
+
+
+
+### No, seriously, what is `reactive`?
+
 In standard imperative and other non-reactive programming, we set variables to
 values at any given time.
 
@@ -20,10 +28,14 @@ A = 10;
 console.log(`New sum: ${Sum}`);
 ```
 
-In traditional imperative programming, `Sum` stays `3` after `A` is reassigned.
+1. That first `console.log` should say that `X` is `11`.
+1. The second `console.log` should still say that `X` is `11`, because the
+   addition was done at a specific time, before the change happened.
+1. *In languages with a `reactive` notation*, like in spreadsheets, `X` would
+   change to `21` in the second `console.log`.
 
-In reactive programming, the values of variables are kept up to date; `Sum` is
-updated to the new sum, `12`, instead.
+That is, in `reactive` languages, *what `X` expresses is addition of `A` and `B`
+as a continuing relationship*, not the immediate result value.
 
 Many of the features of programming languages aim to remove burden from
 programmers, such as manual memory management, loop control, or socket handling.
@@ -32,10 +44,25 @@ Reactive programming aims to allow programmers to remove updating related values
 from their workload.
 
 
-
 ## Spreadsheet example
 
-TODO COMEBACK
+Spreadsheets have come up often already; let's make a direct example.
+Spreadsheets are, essentially, reactive programming systems.  For example, in
+Excel, this would be written as
+
+| Cell | Value         | Note     |
+|:----:|:------------- |:-------- |
+| `A1` | `5`           | JS "A"   |
+| `A2` | `6`           | JS "B"   |
+| `A3` | `=SUM(A1,A2)` | JS "Sum" |
+
+This should render with `11` in `A3`.  If you then change the value in `A1` to
+`15`, in response `A3` should change to `21` on its own - without prompting.
+
+This is simple `reactive` programming.
+
+Our goal in this tutorial is to understand programming in this fashion, and then
+to implement a practical such system in Javascript.
 
 
 
@@ -60,13 +87,16 @@ less work in management, and removes a bunch of opportunities for error.
 
 
 
-## Paradigms; why this is Fundamentally Different (tm)
-todo comeback
-
-
-
 ## What is `functional reactive programming` ?
-todo comeback
+
+We're not going to cover FRP here, but, the short version is, if you're going
+to the extent that a `Haskell`, `OCAML`, or `LISP` person would, and nailing
+your RP system down with math, then you're probably doing one of the forms of
+FRP.  Arrows-based FRP is an example, if you want to go Googling, but for now,
+let's just keep it friendly and simple.
+
+Mostly this topic is here to clarify that no, we are not going to that level of
+strictness in our system.
 
 
 
