@@ -86,7 +86,7 @@ It's a start.  We'll do better quickly.
 #### What do we need?
 
 A garbage implementation can be made on a single class, with a constructor and
-a custom getter.
+a custom `getter`.
 
 #### Let's do it
 
@@ -104,6 +104,14 @@ piece of `reactive`: having a computation that's always up to date on request.
 (It's just that this is awful slow, and can't be updated, and doesn't have any
 of the API we'd want from a nice implementation.)
 
+All this really does is take a function in the constructor, then offer a
+`getter` which runs the function when gotten.  The `getter`, `.v`, represents
+the "value" of the `JRV`, and with time will have more complex behavior.
+
+But, for now, this is pretty much just a lame wrapper of a provided function.
+
+
+
 #### Results
 
 > As a quick reminder, a function that adds `A` and `B` and returns the result
@@ -117,16 +125,18 @@ of the API we'd want from a nice implementation.)
 This isn't exactly elegant, but it gets the job done, per our earlier example:
 
 ```javascript
-var A = 5,
-    B = 6,
-    X = new RN( () => A+B );
+var A   = 5,
+    B   = 6,
+    Sum = new RN( () => A+B );
 
-console.log( X.v );  // 11
+console.log( Sum.v );  // 11
 
 A = 15;
 
-console.log( X.v );  // 21
+console.log( Sum.v );  // 21
 ```
+
+#### Problem
 
 This is technically `reactive`, though it is not yet "there" in spirit.  But,
 one step at a time, especially during the learning process.  We'll get there
@@ -138,9 +148,113 @@ The first thing we should fix is making the value computation updatable.
 
 
 ### JRV step 2 - Mutable JRV
+
+It's important to be able to change the value of a JRV.  Currently, we cannot.
+
 #### What do we need?
+
+To do this, we'll need to add a `setter` to complement the `getter` for `.v`.
+
 #### Let's do it
+
+```javascript
+class JRV {
+
+    constructor(comp) { this.comp = comp; }
+    set v(newComp)    { this.comp = newComp; }
+
+    get v() { return this.comp(); }
+
+}
+```
+
+
+
 #### Results
+
+Not a huge or shocking change here, since we're early on.  We use the same
+example, but now we change some underlying computations and show that the change
+took, as well.
+
+We're going to implement all the variables as `JRV`s this time, so that we have
+something to change, and something derived from them to call.
+
+```javascript
+var A = new JRV( () => 0 ),
+    B = new JRV( () => 5 ),
+    X = new JRV( () => A.v + B.v );
+
+console.log( X.v );
+
+A.v = () => 10; console.log( X.v );
+A.v = () => 20; console.log( X.v );
+A.v = () => 30; console.log( X.v );
+
+X.v = () => (A.v*2) + (B.v*2);
+console.log( X.v );
+```
+
+And, that works.  But, honestly, it'd be nice if we didn't have to write arrows
+to return simple values, like in A and B there; we should be able to just have
+constants there.  We can't, currently, because the `getter` assumes that the
+thing in `.comp` storage is a function, and can be called.  So, if you pass an
+integer to the `constructor`, the `JRV` will try to call the integer - say,
+
+```javascript
+5();
+```
+
+... which is nonsense.
+
+The easiest way is to check, in the getter, whether the thing in `.comp` is a
+function; if so to call it; if not, to return it directly.
+
+So, we'll change
+
+```javascript
+    get v() { return this.comp(); }
+```
+
+To
+
+```javascript
+    get v() {
+        var isFunc = (typeof this.comp === 'function');
+        return isFunc? this.comp() : this.comp;
+    }
+```
+
+As a result, we can now write
+
+```javascript
+var A = new JRV(0),
+    B = new JRV(5),
+    X = new JRV( () => A.v + B.v );
+
+console.log( X.v );
+
+A.v = 10; console.log( X.v );
+A.v = 20; console.log( X.v );
+A.v = 30; console.log( X.v );
+
+X.v = () => (A.v*2) + (B.v*2);
+console.log( X.v );
+```
+
+And that's rather nicer.
+
+#### Problem
+
+At this point, we have an adequate notation.  However, this approach is very
+slow.
+
+Consider the case of a system where `F` depends on `E`, which depends on `D`,
+and so on back to `A`.
+
+In our current system, if we make a change to `D` then inspect `F`, every
+computation back to `A` will be repeated, wastefully.
+
+Let's fix that, with propagation and caching.
 
 
 
@@ -148,6 +262,7 @@ The first thing we should fix is making the value computation updatable.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Problem
 
 
 
@@ -155,6 +270,7 @@ The first thing we should fix is making the value computation updatable.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Problem
 
 
 
@@ -162,6 +278,7 @@ The first thing we should fix is making the value computation updatable.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Problem
 
 
 
@@ -169,6 +286,7 @@ The first thing we should fix is making the value computation updatable.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Problem
 
 
 
@@ -176,6 +294,7 @@ The first thing we should fix is making the value computation updatable.
 #### What do we need?
 #### Let's do it
 #### Results
+#### Problem
 
 
 
