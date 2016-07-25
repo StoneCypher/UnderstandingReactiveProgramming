@@ -136,9 +136,6 @@ A = 15;
 console.log( Sum.v );  // 21
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
-experiment before continuing.
-
 
 
 #### Current code
@@ -153,6 +150,9 @@ class JRV { // js reactive variable
 
 }
 ```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
 
 
 
@@ -232,7 +232,35 @@ integer to the `constructor`, the `JRV` will try to call the integer - say,
 5();
 ```
 
-... which is nonsense.
+... which is nonsense.  The shell will see it this way:
+
+```javascript
+> var X = new RN( () => 42 );
+undefined
+
+> X.v;
+42
+
+> X.v = 10;
+10
+
+> X.v;
+VM198:5 Uncaught TypeError: this.comp is not a function(…)
+get v @ VM198:5(anonymous function) @ VM278:1
+
+> X.v = () => 10;
+() => 10
+
+> X.v;
+10
+```
+
+So, let's make the thing more convenient to use.
+
+There are a bunch of possible responses to this: make two setters, one for
+values; test the type on the way in and wrap it with a reader if it's not a
+function; check if the thing is a value on emit, and emit safely if not.  There
+are ups and downs to each.
 
 The easiest way is to check, in the getter, whether the thing in `.comp` is a
 function; if so to call it; if not, to return it directly.
@@ -271,9 +299,6 @@ console.log( X.v );
 
 And that's rather nicer.
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
-experiment before continuing.
-
 
 
 #### Current code
@@ -293,6 +318,10 @@ class JRV {
 
 }
 ```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
+
 
 
 #### Problem
@@ -495,11 +524,6 @@ X.v = () => (A.v*2) + (B.v*2);
 console.log( X.v );
 ```
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
-experiment before continuing.
-
-
-
 #### Current code
 
 The full implementation now looks like
@@ -545,7 +569,196 @@ class JRV { // reactive node
 }
 ```
 
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
 
+
+
+#### Problem
+
+The nice part of `reactive` programming is having your variables just trigger
+their own behaviors after they're changed.  We don't have that yet, but, let's
+see what happens when we do.
+
+In particular, all that `console.log`ging in the example is pretty grimy, no?
+
+Fix it time.
+
+
+
+### JRV step 4 - Values have handlers
+
+We'd like for variables to have associated behaviors by which to "react" to
+changes, thereby earning the conceptual (if not the definitive) part of the
+name.
+
+Those behaviors will be functions, which we'll call `change handler`s.
+
+
+
+#### What do we need?
+
+We just need to associate a `change handler`, and call it at the right times.
+
+
+
+#### Let's do it
+
+First, let's add a method that lets us change the `change handler` on an
+existing `JRV`.
+
+```javascript
+onchange(newOnChange) {
+    this.change_handler = newOnChange;
+    return this;
+}
+```
+
+Next, let's initialize that member in the `constructor`, and take it from a
+`constructor` argument we'll add.  We'll also give it a default of a function
+that does nothing but return `true`, so that we don't have to go find out if
+there's something to call.
+
+```javascript
+    constructor(comp = (() => true), onchange = (() => true)) {
+        this.comp           = comp;
+        this.change_handler = onchange;
+        this.callbacks      = [];
+        this.update();
+    }
+```
+
+Finally, we improve `.update` to the following algorithm:
+
+1. Locally store the old cache
+1. Update the cache
+1. If the updated cache is different than the local store,
+  1. Call the `change handler`.
+
+Aaaaand, that can be implemented like this:
+
+```javascript
+update() {
+
+    var isFunc   = (typeof this.comp === 'function'),
+        oldValue = this.value;
+
+    this.value = (isFunc? this.comp() : this.comp);
+
+    if (this.value !== oldValue) {
+        this.change_handler(this.value, oldValue);
+    }
+
+    return this.value;
+
+}
+```
+
+
+
+#### Results
+
+We can now just associate the `console.log` as the behavior of `Sum` when it
+changes.  This creates a *far* cleaner example:
+
+```javascript
+var logger = NewData => console.log(`Changed: ${NewData}`),
+
+    A      = new JRV(0),
+    B      = new JRV(5),
+
+    Sum    = new JRV( () => A.v + B.v )
+                   .needs([A,B])
+                   .onchange(logger);
+
+console.log( `Initial value: ${Sum.v}` );
+
+A.v = 10;
+A.v = 20;
+A.v = 30;
+
+Sum.v = () => (A.v*2) + (B.v*2);
+```
+
+Now, you will see an initial value, and a bunch of "Changed:" notices, without
+their being called for.  The output in a Chrome console should read
+
+<pre>
+Initial value: 5         VM102:10
+Changed: 15              VM102:1
+Changed: 25              VM102:1
+Changed: 35              VM102:1
+Changed: 70              VM102:1
+</pre>
+
+The ***real*** value of `reactive` programming is beginning to deliver.
+
+
+
+#### Current code
+
+The full implementation now looks like
+
+```javascript
+
+class JRV { // reactive node
+
+    constructor(comp = (() => true), onchange = (() => true)) {
+        this.comp           = comp;
+        this.change_handler = onchange;
+        this.callbacks      = [];
+        this.update();
+    }
+
+    should_notify(cb) {
+        this.callbacks = this.callbacks.concat(cb);
+    }
+
+    needs(Dep) {
+        if (Array.isArray(Dep)) { Dep.map(d => d.should_notify(this.make_notifier())); }
+        else                    { Dep.should_notify(this.make_notifier()); }
+        return this;
+    }
+
+    make_notifier() {
+        return (() => this.update());
+    }
+
+    onchange(newOnChange) {
+        this.change_handler = newOnChange;
+        return this;
+    }
+
+    set v(newComp) {
+        this.comp = newComp;
+        this.update();
+        this.callbacks.map(cb => cb());
+    }
+
+    get v() {
+        return this.value;
+    }
+
+    update() {
+
+        var isFunc   = (typeof this.comp === 'function'),
+            oldValue = this.value;
+
+        this.value = (isFunc? this.comp() : this.comp);
+
+        if (this.value !== oldValue) {
+            this.change_handler(this.value, oldValue);
+        }
+
+        return this.value;
+
+    }
+
+}
+```
+
+There's a [playground here](#todo_comeback_whargarbl) if you'd like to
+experiment before continuing.
 
 #### Problem
 
@@ -563,19 +776,11 @@ Let's kill that waste too, by implementing lazy updates.
 
 
 
-### JRV step 4 - Dirty flag for lazy recalc
-#### What do we need?
-#### Let's do it
-#### Results
 
-There's a [playground here](#todo_comeback_whargarbl) if you'd like to
-experiment before continuing.
+### JRV step 5 - Dirty flag for lazy recalc
 
-#### Problem
+So, now we just want to update the stuff that actually needs to be updated.
 
-
-
-### JRV step 5 - Values have handlers
 #### What do we need?
 #### Let's do it
 #### Results
