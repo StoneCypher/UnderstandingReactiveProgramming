@@ -349,14 +349,6 @@ piece of `reactive`: having a computation that's always up to date on request.
 (It's just that this is awful slow, and can't be updated, and doesn't have any
 of the API we'd want from a nice implementation.)
 
-All this really does is take a function in the constructor, then offer a getter
-which runs the function when gotten.  The getter, `.v`, is the "value" of the
-`JRV`, and with time will have more complex behavior.
-
-But, for now, this is pretty much just a lame wrapper of a provided function.
-
-
-
 #### Results
 
 > As a quick reminder, a function that adds `A` and `B` and returns the result
@@ -366,18 +358,19 @@ But, for now, this is pretty much just a lame wrapper of a provided function.
 > () => A+B
 > ```
 
+
 This isn't exactly elegant, but it gets the job done, per our earlier example:
 
 ```javascript
-var A   = 5,
-    B   = 6,
-    Sum = new RN( () => A+B );
+var A = 5,
+    B = 6,
+    X = new RN( () => A+B );
 
-console.log( Sum.v );  // 11
+console.log( X.v );  // 11
 
 A = 15;
 
-console.log( Sum.v );  // 21
+console.log( X.v );  // 21
 ```
 
 This is technically `reactive`, though it is not yet "there" in spirit.  But,
@@ -389,13 +382,7 @@ in this document.
 The first thing we should fix is making the value computation updatable.
 
 
-
 ### JRV step 2 - Mutable JRV
-
-It's important to be able to change the value of a JRV.  Currently, we cannot.
-I
-
-
 #### What do we need?
 #### Let's do it
 #### Results
