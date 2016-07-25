@@ -18,13 +18,13 @@
     1. The plan (ish)
     1. Building a rig
   1. Milestones
-    1. JRV step 1 - Can read const `reactive`ly
-    1. JRV step 2 - Mutable JRV
-    1. JRV step 3 - Values propagate and cache
-    1. JRV step 4 - Values have handlers
-    1. JRV step 5 - Dirty flag for lazy recalc
-    1. JRV step 6 - pure call handler
-    1. JRV step 7 - JRV options
+    1. Step 1 - Can read const `reactive`ly
+    1. Step 2 - Mutable JRV
+    1. Step 3 - Values propagate and cache
+    1. Step 4 - Values have handlers
+    1. Step 5 - Dirty flag for lazy recalc
+    1. Step 6 - pure call handler
+    1. Step 7 - JRV options
       1. Option 1 - should re-handle/debounce for same-assign?
       1. Option 2 - should immediate recalc w/o handler?
   1. Taking it for a spin

@@ -64,7 +64,7 @@ So, let's start walking through the aforementioned milestones, one by one.
 
 
 
-### JRV step 1 - Can read const `reactive`ly
+### Step 1 - Can read const `reactive`ly
 
 To begin with, let's go for the genuinely horrid implementation we discussed.
 We start there because it's rock stupid simple.
@@ -175,7 +175,7 @@ The first thing we should fix is making the value computation updatable.
 
 
 
-### JRV step 2 - Mutable JRV
+### Step 2 - Mutable JRV
 
 It's important to be able to change the value of a JRV.  Currently, we cannot.
 
@@ -339,7 +339,7 @@ Let's fix that, with propagation and caching.
 
 
 
-### JRV step 3 - Values propagate and cache
+### Step 3 - Values propagate and cache
 
 So for efficiency's sake, let's have the values cache.  To do that, we'll also
 need the values to update themselves (because if they cached without updating)
@@ -586,7 +586,7 @@ Fix it time.
 
 
 
-### JRV step 4 - Values have handlers
+### Step 4 - Values have handlers
 
 We'd like for variables to have associated behaviors by which to "react" to
 changes, thereby earning the conceptual (if not the definitive) part of the
@@ -778,7 +778,7 @@ Let's kill that waste too, by implementing lazy updates.
 
 
 
-### JRV step 5 - Dirty flag for lazy recalc
+### Step 5 - Dirty flag for lazy recalc
 
 So, now we just want to update the stuff that actually needs to be updated.
 
@@ -956,7 +956,7 @@ entire current interface.)
 
 
 
-### JRV step 6 - pure call handler
+### Step 6 - pure call handler
 #### What do we need?
 #### Let's do it
 #### Results
@@ -974,7 +974,7 @@ experiment before continuing.
 
 
 
-### JRV step 7 - JRV options
+### Step 7 - JRV options
 #### What do we need?
 #### Let's do it
 #### Results
